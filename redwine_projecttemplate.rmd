@@ -1,0 +1,299 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+Redwine by David Havera
+========================================================
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using in your analysis in this code
+# chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk. This
+# prevents the code from displaying in the knitted HTML output. You should set
+# echo=FALSE for all code chunks in your file, unless it makes sense for your
+# report to show the code that generated a particular plot.
+
+# The other parameters for "message" and "warning" should also be set to FALSE
+# for other code chunks once you have verified that each plot comes out as you
+# want it to. This will clean up the flow of your report.
+
+library('ggplot2') # visualization
+library('ggthemes') # visualization
+library('scales') # visualization
+library('gridExtra') # visualisation
+library('corrplot') # visualisation
+library('ggfortify') # visualisation
+library('igraph') # visualisation
+library('dplyr') # data manipulation
+library('readr') # data input
+library('tidyr') # data wrangling
+library('stringr') # string manipulation
+library('forcats') # factor manipulation
+library('tidytext') # text mining
+library('SnowballC') # text analysis
+library('wordcloud') # test visualisation
+library('GGally')
+library('e1071')
+library('randomForest')
+```
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+redwine <- read.csv("wineQualityReds.csv")
+```
+
+
+I will be evaluating a red wine quality dataset.  This dataset contains over 1,599 red wines with 11 features consisting of the chemical properties of the wine.  At least 3 wine experts rated the wine on a scale from 0 (bad) to 10 (excellent).  I will be analyzing this data set to determine what chemical properties influence the quality of red wine.
+
+# Univariate Plots Section
+
+```{r echo=FALSE}
+names(redwine)
+
+```
+```{r echo=FALSE}
+str(redwine)
+```
+```{r echo=FALSE}
+summary(redwine)
+```
+
+```{r echo=FALSE}
+sum(is.na(redwine))
+```
+
+
+### What is the structure of your dataset?
+There are 13 variables with 1,399 observations.  All variables are numeric with the exception of X and quality being integers.  There are no #N/A's in the data set.
+
+```{r echo=FALSE}
+EDA1 <- ggpairs(redwine, columns = c(1:4,13))
+EDA1
+EDA2 <- ggpairs(redwine, columns = c(5:8,13))
+EDA2
+EDA3 <- ggpairs(redwine, columns = c(9:12,13))
+EDA3
+
+```
+
+### What is/are the main feature(s) of interest in your dataset?
+I used the ggpair to show relationships across all the variables.  I ran 3 charts in order to make the data readable. Each chart compares each variable against quality readable.  Based on this analysis, I decided on the following features of interest:  alcohol, volatile acidity, and sulphates.
+
+Alcohol
+The ggpair shows that alcohol has a positive correlation to quality of 0.48 and over 75% of the wines have at least 9.5% alcohol.
+
+Voliatile acidity
+Volatile acidity has a (.39) correlation to quality and over 75% of the wines have at least a .39 level of acidity.  
+
+Sulphates
+Sulphates have a .25 correlation to quality and over 75% of the wines have at least a .55 level of sulphates.
+
+### What other features in the dataset do you think will help support your \
+
+Wine quality is a blend of all of these features and I believe that they all play a role in wine quality.
+
+```{r echo=FALSE}
+redwine$total.acidity <- redwine$volatile.acidity + redwine$fixed.acidity
+```
+
+```{r echo=FALSE}
+cor(redwine$total.acidity, redwine$quality)
+```
+
+### Did you create any new variables from existing variables in the dataset?
+I decided that fixed and voliatile acidity can be combined into total acidity. However, I discovered that total_acidity only had a correlation to quality of 0.085.
+
+```{r echo=FALSE}
+EDA4 <- ggpairs(redwine, columns = c(3,11,12,13))
+EDA4
+```
+```{r echo=FALSE}
+skewness(redwine$alcohol)
+skewness(redwine$sulphates)
+skewness(redwine$volatile.acidity)
+skewness(redwine$quality)
+```
+
+### Of the features you investigated, were there any unusual distributions? \
+Did you perform any operations on the data to tidy, adjust, or change the form \
+of the data? If so, why did you do this?
+
+All the features that I am interested are positively skewed with sulphates being the most promently skewed.  Therefore, I decided to log transform these features and we can see the improved skewness below.
+
+```{r echo=FALSE}
+redwine$quality_log <- log10(redwine$quality + 1)
+redwine$volatile.acidity_log <- log10(redwine$volatile.acidity + 1)
+redwine$alcohol_log <- log10(redwine$alcohol + 1)
+redwine$sulphates_log <- log10(redwine$sulphates + 1)
+```
+
+```{r echo=FALSE}
+skewness(redwine$alcohol_log)
+skewness(redwine$sulphates_log)
+skewness(redwine$volatile.acidity_log)
+skewness(redwine$quality_log)
+```
+
+
+
+
+```{r echo=FALSE}
+alcohol.lm = lm(quality ~ alcohol, data=redwine)
+summary(alcohol.lm)$r.squared
+
+sulphates.lm = lm(quality ~ sulphates, data=redwine)
+summary(sulphates.lm)$r.squared
+
+volatile.acidity.lm = lm(quality ~ volatile.acidity, data=redwine)
+summary(volatile.acidity.lm)$r.squared
+
+```
+
+# Bivariate Analysis
+
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. Were there features that strengthened each other in terms of \
+looking at your feature(s) of interest?
+
+I chose the variables with the higest correlation to quality: alcohol, volatile.acidity, and sulphates.  I ran the R2 for these features against quality and came up with a total R2 of 0.44, which means that 44% of quality can be explained by these variables.  Sulphates looks particularly lo2 at only 6%.
+
+
+### Did you observe any interesting relationships between the other features \
+(not the main feature(s) of interest)?
+```
+I found it interesting that fixed acidity had a correlation of 0.67 to citric acid.  There seems to be 
+
+
+### What was the strongest relationship you found?
+
+The strongest relationship was 0.48 correlation of wine to alcohol.
+
+# Multivariate Plots Section
+
+```
+```{r echo=FALSE}
+EDA6 <- ggpairs(redwine, columns = c(5,9,12,13))
+EDA6
+```
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. Were there features that strengthened each other in terms of \
+looking at your feature(s) of interest?
+
+Density has a strong negative correlation to alcohol of (0.5) and a positive correlation of 0.36 to residual sugars.  This makes sense since the data set description of this feature says that density is dependent on alcohol levels and sugars.  However, it's interesting to see the relationship in terms of correlation numbers.  
+
+### Were there any interesting or surprising interactions between features?
+
+Earlier I could have said that residual sugars is a throw away variable because it has only 0.0137 correlation to quality.  However, residual sugar can impact density which can negativitly impact alcohol which can impact wine quality.
+
+```{r echo=FALSE, Multivariate_Plots}
+set.seed(415)
+train<-sample_frac(redwine, 0.7)
+sid<-as.numeric(rownames(train)) # because rownames() returns character
+test<-redwine[-sid,]
+
+forest <- randomForest(quality_log ~ volatile.acidity_log + alcohol_log + sulphates_log,
+                              data=train)
+print(forest) 
+
+```
+
+### OPTIONAL: Did you create any models with your dataset? Discuss the \
+strengths and limitations of your model.
+
+I chose the random forest (RF) to evaluate the dataset.  
+
+Strengths of RF:
+ + Limited parameter tuning ... default parameters often have great performance
+ + Fast
+ + Versitile
+ + Great for feature selection because it evaluates a lot of decision tree variations
+ + Illustrates information gain by inclusion/exclusion of variables in the forest
+ 
+Limitations of RF:
+ + Poor Peformance: small data sets
+ + Fragmentation Problem: each split has diminishing information gain
+ + Prone to overfitting
+
+------
+
+# Final Plots and Summary
+
+
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+ggplot(aes(x = sulphates_log , y = quality_log), data = redwine) +
+  geom_point() +
+  geom_smooth() +
+  scale_y_log10()
+  scale_x_log10()
+```
+```{r echo=FALSE}
+ggplot(aes(x = alcohol_log , y = quality_log), data = redwine) +
+  geom_point() +
+  geom_smooth() +
+  scale_y_log10()
+  scale_x_log10()
+```
+```{r echo=FALSE}
+ggplot(aes(x = volatile.acidity_log , y = quality_log), data = redwine) +
+  geom_point() +
+  geom_smooth() +
+  scale_y_log10()
+  scale_x_log10()
+```
+
+### Description One
+Alcohol and volatile acidity seem to have the most linear relationship with quality.  As volatile acidity increases, quality decreases and as alcohol increases, quality increases.
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+
+importance    <- importance(forest)
+feature_importance <- data.frame(Variables = row.names(importance))
+
+# Create a rank variable based on importance
+rank <- feature_importance %>%
+  mutate(Rank = paste0('#',dense_rank(desc(importance))))
+
+# Use ggplot2 to visualize the relative importance of variables
+ggplot(rank, aes(x = reorder(Variables, importance), 
+    y = importance, fill = importance)) +
+  geom_bar(stat='identity') + 
+  geom_text(aes(x = Variables, y = 0.5, label = Rank),
+    hjust=0, vjust=0.55, size = 4, colour = 'red') +
+  labs(x = 'Variables') +
+  coord_flip() + 
+  theme_few()
+
+```
+
+### Description Two
+The random forest classifer is a powerful tool to predict the quality of wine based on the features with the highest correlation to quality.  This classifier shows that alcohol content is the most important feature to predicting quality.
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+prediction <- predict(forest, test)
+ggplot(aes(x = prediction , y = quality), data = test) +
+  geom_point() +
+  geom_smooth()
+
+```
+
+### Description Three
+
+The overall performance of the random forest classifier was excellent.  It had an accuracy of around 75% on quality of 5 and increased steadily to 90% for quality of 7.
+
+------
+
+# Reflection
+Overall, I analyzed the data and built a model that could correclty predict the wine quality with a high accuracy based on alcohol content, sulphates, and volatile acidity.  I do believe that accuracy can be further improved because these 3 features only  explained 35% of the variance, so the model could benefit from PCA or Kbestfeature selection.  However, this is a great starting point to build more in depth analysis upon because it already has a high degree of accruracy on the test data set.
+
+
