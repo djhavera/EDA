@@ -38,6 +38,9 @@ library('wordcloud') # test visualisation
 library('GGally')
 library('e1071')
 library('randomForest')
+library('caret')
+library('mlbench')
+library('ggfortify')
 ```
 
 ```{r echo=FALSE, Load_the_Data}
@@ -76,21 +79,15 @@ the exception of X and quality being integers.  There are no #N/A's in the data
 set.
 
 ```{r echo=FALSE}
-EDA1 <- ggpairs(redwine, columns = c(1:4,13))
-EDA1
-EDA2 <- ggpairs(redwine, columns = c(5:8,13))
-EDA2
-EDA3 <- ggpairs(redwine, columns = c(9:12,13))
-EDA3
+res <- cor(redwine)
+round(res, 2)
 
 ```
 
 
 ### What is/are the main feature(s) of interest in your dataset?
-I used the ggpair to show relationships across all the variables.  
-I ran 3 charts in order to make the data readable. Each chart compares each 
-variable against quality readable.  Based on this analysis, I decided on the 
-following features of interest:  alcohol, volatile acidity, and sulphates.
+I decided on the following features of interest based on the highest correlation 
+to quality: alcohol, volatile acidity, and sulphates.
 
 ```{r echo=FALSE}
  ggplot(aes(factor(quality), 
@@ -103,16 +100,25 @@ following features of interest:  alcohol, volatile acidity, and sulphates.
                color = "red", 
                shape = 8, 
                size = 4)
+
+a1 <- ggplot(redwine, aes(x = alcohol)) +
+  geom_histogram(binwidth = 0.01) +
+  labs(y = 'Alcohol %', x = 'Count',
+          title = "Alcohol") 
+
+
+a2 <- ggplot(redwine, aes(y = alcohol, x = 1)) +
+  geom_boxplot(color = 'blue') +
+  geom_jitter(aes(x = 1, y = alcohol), alpha = 0.3) +
+  labs(y = 'Alcohol %', x = '',
+          title = "Alcohol distribution") +
+  coord_flip()
+grid.arrange(a1, a2)
 ```
-```{r echo=FALSE}
-ggplot(aes(x=alcohol), 
-        data = redwine) +
-  geom_histogram( bins = 30)
-```
-Alcohol
-The ggpair shows that alcohol has a positive correlation to quality of 0.48 
-and over 75% of the wines have at least 9.5% alcohol. It appears anything above 
-14 would be an outlier.
+
+Alcohol has a positive correlation to quality of 0.48 
+and over 75% of the wines have at least 11% alcohol. It appears anything above 
+13 and below 8 would be an outlier.
 
 ```{r echo=FALSE}
  ggplot(aes(factor(quality), 
@@ -126,13 +132,25 @@ and over 75% of the wines have at least 9.5% alcohol. It appears anything above
                shape = 8, 
                size = 4)
 
-ggplot(aes(x=sulphates), 
-        data = redwine) +
-  geom_histogram( bins = 30)
+b1 <- ggplot(redwine, aes(x = sulphates)) +
+  geom_histogram(binwidth = 0.01) +
+  labs(y = 'Sulphates (g/L)', x = 'Count',
+          title = "Sulphates") 
+
+
+b2 <- ggplot(redwine, aes(y = sulphates, x = 1)) +
+  geom_boxplot(color = 'blue') +
+  geom_jitter(aes(x = 1, y = sulphates), alpha = 0.3) +
+  labs(y = 'Sulphates (g/L)', x = '',
+          title = "Sulphates distribution") +
+  coord_flip()
+
+grid.arrange(b1, b2)
+
 ```
-Sulphates
+
 Sulphates have a .25 correlation to quality and over 75% of the wines have at 
-least a .55 level of sulphates.  It appears anything above 1.2 and below 0.25 
+least a 0.75 level of sulphates.  It appears anything above 1 and below 0.25 
 would be an outlier.
 
 ```{r echo=FALSE}
@@ -147,13 +165,25 @@ would be an outlier.
                shape = 8, 
                size = 4)
 
-ggplot(aes(x=volatile.acidity), 
-        data = redwine) +
-  geom_histogram( bins = 30)
+p1 <- ggplot(redwine, aes(x = volatile.acidity)) +
+  geom_histogram(binwidth = 0.01) +
+  labs(y = 'Volatile Acidity (g/L)', x = 'Count',
+          title = "Volatile acidity distribution") 
+
+p2 <- ggplot(redwine, aes(y = volatile.acidity, x = 1)) +
+  geom_boxplot(color = 'blue') +
+  geom_jitter(aes(x = 1, y = volatile.acidity), alpha = 0.3) +
+  labs(y = 'Volatile Acidity (g/L)', x = '',
+          title = "Volatile acidity distribution") +
+  coord_flip()
+
+grid.arrange(p1, p2)
+
 ```
-Voliatile acidity
+
 Volatile acidity has a (.39) correlation to quality and over 75% of the wines 
-have at least a .39 level of acidity.  It appears anything above 1.2 and below 0.2 would be an outlier.
+have at least a 0.6 level of acidity.  It appears anything above 1 and 
+below 0.1 would be an outlier.
 
 ### What other features in the dataset do you think will help support your \
 Wine quality is a blend of all of these features and I believe that they all 
@@ -173,8 +203,7 @@ However, I discovered that total_acidity only had a correlation to
 quality of 0.085.
 
 ```{r echo=FALSE}
-EDA4 <- ggpairs(redwine, columns = c(3,11,12,13))
-EDA4
+
 ```
 ```{r echo=FALSE}
 skewness(redwine$alcohol)
@@ -196,6 +225,7 @@ redwine$quality_log <- log10(redwine$quality + 1)
 redwine$volatile.acidity_log <- log10(redwine$volatile.acidity + 1)
 redwine$alcohol_log <- log10(redwine$alcohol + 1)
 redwine$sulphates_log <- log10(redwine$sulphates + 1)
+redwine$total.acidity_log <- log10(redwine$total.acidity + 1)
 ```
 
 ```{r echo=FALSE}
@@ -205,10 +235,6 @@ skewness(redwine$volatile.acidity_log)
 skewness(redwine$quality_log)
 ```
 We can see the log transform reduced the sknewess across the feature set.
-
-
-
-
 
 # Bivariate Analysis
 
@@ -257,37 +283,34 @@ combines citric acid.
 
 ### What was the strongest relationship you found?
 
-The strongest relationship was 0.48 correlation of quality to alcohol.  I expect that this is the most impactful feature to predict the quality of wine, but we will later test this hypothesis.
+The strongest relationship was 0.48 correlation of quality to alcohol.  
+I expect that this is the most impactful feature to predict the quality of wine,
+but we will later test this hypothesis.
 
 # Multivariate Plots Section
 
 ```
-```{r echo=FALSE}
-EDA6 <- ggpairs(redwine, columns = c(5,9,12,13))
-EDA6
-```
+
 
 # Multivariate Analysis
 ```{r echo=FALSE}
-  ggplot(aes(x = alcohol, 
-           y = density   ), 
-       data = redwine) +
-      geom_point(alpha = 0.3, size = 1) +
-      geom_smooth(method = "lm", se = FALSE,size=1)
+
+EDA1 <- ggpairs(redwine, columns = c(1:4,13))
+EDA1
+EDA2 <- ggpairs(redwine, columns = c(5:8,13))
+EDA2
+EDA3 <- ggpairs(redwine, columns = c(9:12,13))
+EDA3
 ```
-```{r echo=FALSE}
-  ggplot(aes(x = alcohol, 
-           y = density  , color = factor(quality)), 
-       data = redwine) +
-      geom_point(alpha = 0.8, size = 2) +
-      geom_smooth(method = "lm", se = FALSE,size=1)  +
-  scale_color_brewer(type='seq',
-                   guide=guide_legend(title='Quality'))
-```
+
 
 ### Talk about some of the relationships you observed in this part of the \
 investigation. Were there features that strengthened each other in terms of \
 looking at your feature(s) of interest?
+
+I used the ggpair to show relationships across all the variables.  
+I ran 3 charts in order to make the data readable. Each chart compares each 
+variable against quality. 
 
 Density has a strong negative correlation to alcohol of (0.5) and a positive 
 correlation of 0.36 to residual sugars.  This makes sense since the data set 
@@ -317,7 +340,7 @@ train<-sample_frac(redwine, 0.7)
 sid<-as.numeric(rownames(train)) # because rownames() returns character
 test<-redwine[-sid,]
 
-forest <- randomForest(quality_log ~ volatile.acidity_log + alcohol_log 
+forest <- randomForest(factor(quality_log) ~ volatile.acidity_log + alcohol_log 
                        + sulphates_log,
                               data=train)
 print(forest) 
@@ -342,26 +365,7 @@ Limitations of RF:
  + Fragmentation Problem: each split has diminishing information gain
  + Prone to overfitting
 
-------
-
-# Final Plots and Summary
-
-
-
-### Plot One
-```{r echo=FALSE, Plot_One}
-ggcorr(redwine)
-
-
-```
-``
-
-### Description One
-The correlation map is a great visual to show why we initially chose alcohol, volatile.acidity, and sulphates as the main features to explore.  It also highlights the relationships we observed between other features such as density and residual sugars and alcohol.
-
-### Plot Two
-```{r echo=FALSE, Plot_Two}
-
+```{r}
 importance    <- importance(forest)
 feature_importance <- data.frame(Variables = row.names(importance))
 
@@ -371,7 +375,7 @@ rank <- feature_importance %>%
 
 # Use ggplot2 to visualize the relative importance of variables
 ggplot(rank, aes(x = reorder(Variables, importance), 
-    y = importance, fill = importance)) +
+    y = importance)) +
   geom_bar(stat='identity') + 
   geom_text(aes(x = Variables, y = 0.5, label = Rank),
     hjust=0, vjust=0.55, size = 4, colour = 'red') +
@@ -379,42 +383,100 @@ ggplot(rank, aes(x = reorder(Variables, importance),
   coord_flip() + 
   theme_few()
 
+ggcorr(redwine)
+
 ```
 
-### Description Two
-The random forest classifer is a powerful tool to predict the quality of wine.  
+The random forest classifier is a powerful tool to predict the quality of wine.  
 
-I chose this graph to confirm our earlier thought that alcohol, which had the
-highest correlation to quality, would be the most important prediction feature.
+It's good to see this classifier confirms that alcohol (the feature with the 
+highest correlation) is indeed the most important for predicting quality.
 
-### Plot Three
-```{r echo=FALSE, Plot_Three}
+The correlation map is a great visual to show why we initially chose alcohol, 
+volatile.acidity, and sulphates as the main features to explore.  
+It also highlights the relationships we observed between other features 
+such as density and residual sugars and alcohol.  I would use this to 
+further explore additional features to test in the decision tree.
+
+------
+
+# Final Plots and Summary
+
+
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+  
+ggplot(aes(x = alcohol, 
+         y = density  , color = factor(quality)), 
+     data = redwine) +
+    geom_point(alpha = 0.8, size = 2) +
+    geom_smooth(method = "lm", se = FALSE,size=1)  +
+scale_color_brewer(type='seq',
+                 guide=guide_legend(title='Quality'))
+
+
+
+```
+``
+
+### Description One
+
+This graph is a great illustration that shows the relationship between alcohol,
+density, and quality.  Since density has a direct relationship on alcohol it
+impacts the quality of wine.  I struggled with feature selection and this is a
+relationship that I would further explore depending on the classifier performance.
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+
 prediction <- predict(forest, test)
 
-ggplot(aes(factor(quality), 
-          prediction), 
+ggplot(aes(y = quality, 
+          x = prediction), 
       data = test) +
 geom_jitter( alpha = .3)  + 
-geom_boxplot( alpha = .5,color = 'blue')+ 
+geom_boxplot( alpha = .5,color = 'blue') +
 stat_summary(fun.y = "mean", 
                geom = "point", 
                color = "red", 
                shape = 8, 
                size = 4)
+```
+
+### Description Two
+
+I chose the boxplot above because I wanted to illustrate the million 
+dollar question:  
+
+Is the model able to predict the quality of wine?  The graph illustrates that 
+the answer is yes.
+
+In fact, the overall performance of the random forest classifier was excellent.  
+It had a mean accuracy of around 80% on quality of 5 and steadily increased 
+after that.
+
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+log.rw <- log10(redwine + 1)
+
+rw.pca <- prcomp(log.rw[,1:12],
+                 center = TRUE,
+                 scale. = TRUE)
+autoplot(rw.pca, scale = 0, data = redwine,
+         loadings = TRUE, loadings.colour = 'blue',
+         loadings.label = TRUE, loadings.label.size = 5)
 
 ```
 
 ### Description Three
 
-I chose the boxplot above because I wanted to illustrate the million 
-dollar question:  
-
-Is the model able to predict the quality of wine.  The graph illustrates that 
-the answer is yes.
-
-In fact, the overall performance of the random forest classifier was excellent.  
-It had a mean accuracy of around 80% on quality of 5 and increased steadily 
-to a mean accuracy of 86% for quality of 8.
+I created the graph above to see how PCA would further condense the features.  
+I found it fascinating that alcohol, sulphates and volatile acidity all belonged
+to seperate components.  This makes me believe that these features selected 
+are fairly balanced.  However, PH belongs to a seperate component and 
+perhaps adding this feature would have increased the performance of the classifier.
 
 ------
 
