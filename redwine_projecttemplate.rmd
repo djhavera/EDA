@@ -7,7 +7,9 @@ Redwine by David Havera
 ========================================================
 
 
-```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+
 # Load all of the packages that you end up using in your analysis in this code
 # chunk.
 
@@ -55,7 +57,6 @@ wine.  At least 3 wine experts rated the wine on a scale from 0 (bad) to 10
 (excellent).  I will be analyzing this data set to determine what chemical 
 properties influence the quality of red wine.
 
-# Univariate Plots Section
 
 ```{r echo=FALSE}
 names(redwine)
@@ -71,12 +72,15 @@ summary(redwine)
 ```{r echo=FALSE}
 sum(is.na(redwine))
 ```
+```{r}
+redwine$X <- NULL
+```
 
 
 ### What is the structure of your dataset?
 There are 13 variables with 1,399 observations.  All variables are numeric with 
 the exception of X and quality being integers.  There are no #N/A's in the data 
-set.
+set.  I removed X from the dataset.
 
 ```{r echo=FALSE}
 res <- cor(redwine)
@@ -90,17 +94,7 @@ I decided on the following features of interest based on the highest correlation
 to quality: alcohol, volatile acidity, and sulphates.
 
 ```{r echo=FALSE}
- ggplot(aes(factor(quality), 
-            alcohol), 
-        data = redwine) +
-  geom_jitter( alpha = .3)  + 
-  geom_boxplot( alpha = .5,color = 'blue')+ 
-  stat_summary(fun.y = "mean", 
-               geom = "point", 
-               color = "red", 
-               shape = 8, 
-               size = 4)
-
+ 
 a1 <- ggplot(redwine, aes(x = alcohol)) +
   geom_histogram(binwidth = 0.01) +
   labs(y = 'Alcohol %', x = 'Count',
@@ -112,17 +106,11 @@ a2 <- ggplot(redwine, aes(y = alcohol, x = 1)) +
   geom_jitter(aes(x = 1, y = alcohol), alpha = 0.3) +
   labs(y = 'Alcohol %', x = '',
           title = "Alcohol distribution") +
-  coord_flip()
+    coord_flip()
 grid.arrange(a1, a2)
-```
 
-Alcohol has a positive correlation to quality of 0.48 
-and over 75% of the wines have at least 11% alcohol. It appears anything above 
-13 and below 8 would be an outlier.
-
-```{r echo=FALSE}
- ggplot(aes(factor(quality), 
-            sulphates), 
+ggplot(aes(factor(quality), 
+            alcohol), 
         data = redwine) +
   geom_jitter( alpha = .3)  + 
   geom_boxplot( alpha = .5,color = 'blue')+ 
@@ -131,6 +119,18 @@ and over 75% of the wines have at least 11% alcohol. It appears anything above
                color = "red", 
                shape = 8, 
                size = 4)
+
+
+
+
+```
+
+Alcohol has a positive correlation to quality of 0.48 
+and over 75% of the wines have at least 11% alcohol. It appears anything above 
+13 and below 8 would be an outlier.
+
+```{r echo=FALSE}
+
 
 b1 <- ggplot(redwine, aes(x = sulphates)) +
   geom_histogram(binwidth = 0.01) +
@@ -147,15 +147,8 @@ b2 <- ggplot(redwine, aes(y = sulphates, x = 1)) +
 
 grid.arrange(b1, b2)
 
-```
-
-Sulphates have a .25 correlation to quality and over 75% of the wines have at 
-least a 0.75 level of sulphates.  It appears anything above 1 and below 0.25 
-would be an outlier.
-
-```{r echo=FALSE}
  ggplot(aes(factor(quality), 
-            volatile.acidity), 
+            sulphates), 
         data = redwine) +
   geom_jitter( alpha = .3)  + 
   geom_boxplot( alpha = .5,color = 'blue')+ 
@@ -164,6 +157,14 @@ would be an outlier.
                color = "red", 
                shape = 8, 
                size = 4)
+
+```
+
+Sulphates have a .25 correlation to quality and over 75% of the wines have at 
+least a 0.75 level of sulphates.  It appears anything above 1 and below 0.25 
+would be an outlier.
+
+```{r echo=FALSE}
 
 p1 <- ggplot(redwine, aes(x = volatile.acidity)) +
   geom_histogram(binwidth = 0.01) +
@@ -178,6 +179,18 @@ p2 <- ggplot(redwine, aes(y = volatile.acidity, x = 1)) +
   coord_flip()
 
 grid.arrange(p1, p2)
+
+ ggplot(aes(factor(quality), 
+            volatile.acidity), 
+        data = redwine) +
+  geom_jitter( alpha = .3)  + 
+  geom_boxplot( alpha = .5,color = 'blue')+ 
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 4)
+
 
 ```
 
@@ -234,9 +247,13 @@ skewness(redwine$sulphates_log)
 skewness(redwine$volatile.acidity_log)
 skewness(redwine$quality_log)
 ```
+
+```{r}
+
+
+```
 We can see the log transform reduced the sknewess across the feature set.
 
-# Bivariate Analysis
 
 ```{r echo=FALSE}
 #R2
@@ -291,8 +308,6 @@ but we will later test this hypothesis.
 
 ```
 
-
-# Multivariate Analysis
 ```{r echo=FALSE}
 
 EDA1 <- ggpairs(redwine, columns = c(1:4,13))
@@ -301,6 +316,7 @@ EDA2 <- ggpairs(redwine, columns = c(5:8,13))
 EDA2
 EDA3 <- ggpairs(redwine, columns = c(9:12,13))
 EDA3
+
 ```
 
 
@@ -332,7 +348,8 @@ Earlier I could have said that residual sugars is a throw away variable
 because it has only 0.0137 correlation to quality.  However, residual sugar 
 can impact density which can negativitly impact alcohol 
 which can impact wine quality.  I wonder if PCA would condense residual 
-sugars, density, and alcohol together.
+sugars, density, and alcohol together.  I also believe that removing the outliers
+from residual sugar would change this chart significantly.
 
 ```{r echo=FALSE, Multivariate_Plots}
 set.seed(415)
@@ -342,8 +359,9 @@ test<-redwine[-sid,]
 
 forest <- randomForest(factor(quality_log) ~ volatile.acidity_log + alcohol_log 
                        + sulphates_log,
-                              data=train)
+                              data=train, metric = "Accuracy")
 print(forest) 
+
 
 ```
 
@@ -397,7 +415,18 @@ volatile.acidity, and sulphates as the main features to explore.
 It also highlights the relationships we observed between other features 
 such as density and residual sugars and alcohol.  I would use this to 
 further explore additional features to test in the decision tree.
+```{r}
+log.rw <- log10(redwine + 1)
 
+rw.pca <- prcomp(log.rw[,1:12],
+                 center = TRUE,
+                 scale. = TRUE)
+
+autoplot(rw.pca, scale = 0, data = redwine)
+```
+PCA doesn't provide a clear view on components, so further analysis is needed to 
+determine how features would be condensed into components.  However, it appears
+from this graph that there could be two components (0,0) and (0,1)
 ------
 
 # Final Plots and Summary
@@ -406,56 +435,37 @@ further explore additional features to test in the decision tree.
 
 ### Plot One
 ```{r echo=FALSE, Plot_One}
-  
-ggplot(aes(x = alcohol, 
-         y = density  , color = factor(quality)), 
-     data = redwine) +
-    geom_point(alpha = 0.8, size = 2) +
-    geom_smooth(method = "lm", se = FALSE,size=1)  +
-scale_color_brewer(type='seq',
-                 guide=guide_legend(title='Quality'))
-
-
+ggplot(redwine, aes(x = alcohol_log)) +
+  geom_histogram(binwidth = 0.01) +
+  labs(y = 'Alcohol %', x = 'Count',
+          title = "Alcohol Log Scaled") 
 
 ```
 ``
 
 ### Description One
 
-This graph is a great illustration that shows the relationship between alcohol,
-density, and quality.  Since density has a direct relationship on alcohol it
-impacts the quality of wine.  I struggled with feature selection and this is a
-relationship that I would further explore depending on the classifier performance.
+This graph is a great illustration that shows the impact of feature scaling alcohol.
+The initial histogram of alcohol was very spread out and difficult to read, but
+log transforming the data gives us a much cleaner look at this feature.
 
 ### Plot Two
 ```{r echo=FALSE, Plot_Two}
+ggplot(aes(x = residual.sugar, y = density), data= redwine)+
+  scale_x_continuous(lim = c(1, quantile(redwine$residual.sugar,0.90)))+
+  scale_y_continuous(lim = c(0.99, quantile(redwine$density,0.90)))+    
+  geom_point(fill = I('#F79420'), color = I('black'), shape =21) +
+  stat_smooth(method = 'lm') +
+    labs(y = 'Density g / cm^3', x = 'Residual Sugar g / dm^3',
+          title = "Residual Sugar vs Density (Outliers Removed)")
 
-prediction <- predict(forest, test)
-
-ggplot(aes(y = quality, 
-          x = prediction), 
-      data = test) +
-geom_jitter( alpha = .3)  + 
-geom_boxplot( alpha = .5,color = 'blue') +
-stat_summary(fun.y = "mean", 
-               geom = "point", 
-               color = "red", 
-               shape = 8, 
-               size = 4)
 ```
 
 ### Description Two
 
-I chose the boxplot above because I wanted to illustrate the million 
-dollar question:  
-
-Is the model able to predict the quality of wine?  The graph illustrates that 
-the answer is yes.
-
-In fact, the overall performance of the random forest classifier was excellent.  
-It had a mean accuracy of around 80% on quality of 5 and steadily increased 
-after that.
-
+I chose the graph above because I wanted to further investigate the relationship
+between residual sugars and density.  There does still appear to be a direct linear
+relationship between these variables even after removing outliers.  
 
 ### Plot Three
 ```{r echo=FALSE, Plot_Three}
@@ -466,13 +476,14 @@ rw.pca <- prcomp(log.rw[,1:12],
                  scale. = TRUE)
 autoplot(rw.pca, scale = 0, data = redwine,
          loadings = TRUE, loadings.colour = 'blue',
-         loadings.label = TRUE, loadings.label.size = 5)
+         loadings.label = TRUE, loadings.label.size = 5, alpha = 0.1) +
+    labs(title = "PCA Components Graph by Feature")
 
 ```
 
 ### Description Three
 
-I created the graph above to see how PCA would further condense the features.  
+I added the feature names to my PCA graph and found there were 4 components.
 I found it fascinating that alcohol, sulphates and volatile acidity all belonged
 to seperate components.  This makes me believe that these features selected 
 are fairly balanced.  However, PH belongs to a seperate component and 
