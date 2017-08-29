@@ -43,6 +43,7 @@ library('randomForest')
 library('caret')
 library('mlbench')
 library('ggfortify')
+library('reshape')
 ```
 
 ```{r echo=FALSE, Load_the_Data}
@@ -81,6 +82,32 @@ redwine$X <- NULL
 There are 13 variables with 1,399 observations.  All variables are numeric with 
 the exception of X and quality being integers.  There are no #N/A's in the data 
 set.  I removed X from the dataset.
+
+```{r}
+# create histograms for each attribute
+create_plot <- function(variable) {
+  return(ggplot(aes_string(x = variable), data = redwine) + 
+           geom_density())}
+
+create_plot('fixed.acidity')
+create_plot('volatile.acidity')
+create_plot('citric.acid')
+create_plot('residual.sugar')
+create_plot('chlorides')
+create_plot('free.sulfur.dioxide')
+create_plot('total.sulfur.dioxide')
+create_plot('density')
+create_plot('pH')
+create_plot('sulphates')
+create_plot('alcohol')
+
+
+
+```
+
+I created histograms for all the features and it looks like several of the variables
+are positively skewed.  I will dig deeper into this once I select the features of interest
+but it's good to know this set could benefit from log scaling.
 
 ```{r echo=FALSE}
 res <- cor(redwine)
@@ -199,8 +226,9 @@ have at least a 0.6 level of acidity.  It appears anything above 1 and
 below 0.1 would be an outlier.
 
 ### What other features in the dataset do you think will help support your \
-Wine quality is a blend of all of these features and I believe that they all 
-play a role in wine quality.
+I would like to further explore density, residual sugar,
+fixed.acidity and citric.acid.
+
 
 ```{r echo=FALSE}
 redwine$total.acidity <- redwine$volatile.acidity + redwine$fixed.acidity
@@ -290,7 +318,7 @@ Sulphates looks particularly low at only 6%.
 
 ### Did you observe any interesting relationships between the other features \
 (not the main feature(s) of interest)?
-```
+
 I found it interesting that fixed acidity had a correlation of 0.67 
 to citric acid.  There seems to be a lot of features related to acid in the 
 dataset.  If I am not able to accurately predict from the three features that 
@@ -304,35 +332,29 @@ The strongest relationship was 0.48 correlation of quality to alcohol.
 I expect that this is the most impactful feature to predict the quality of wine,
 but we will later test this hypothesis.
 
-# Multivariate Plots Section
-
-```
-
-```{r echo=FALSE}
-
-EDA1 <- ggpairs(redwine, columns = c(1:4,13))
-EDA1
-EDA2 <- ggpairs(redwine, columns = c(5:8,13))
-EDA2
-EDA3 <- ggpairs(redwine, columns = c(9:12,13))
-EDA3
-
-```
-
-
 ### Talk about some of the relationships you observed in this part of the \
 investigation. Were there features that strengthened each other in terms of \
 looking at your feature(s) of interest?
 
-I used the ggpair to show relationships across all the variables.  
-I ran 3 charts in order to make the data readable. Each chart compares each 
-variable against quality. 
+Per the graph below, density has a strong negative correlation to alcohol of 
+(0.5) and a positive correlation of 0.36 to residual sugars.  
+This makes sense since the data set description of this feature says 
+that density is dependent on alcohol levels and sugars.  
+However, it's interesting to see the relationship 
+in terms of correlation numbers. 
 
-Density has a strong negative correlation to alcohol of (0.5) and a positive 
-correlation of 0.36 to residual sugars.  This makes sense since the data set 
-description of this feature says that density is dependent on alcohol 
-levels and sugars.  However, it's interesting to see the relationship 
-in terms of correlation numbers.  
+```{r}
+ ggplot(aes(x = alcohol, 
+           y = density  , color = factor(quality)), 
+       data = redwine) +
+      geom_point(alpha = 0.8, size = 2) +
+      geom_smooth(method = "lm", se = FALSE,size=1)  +
+  scale_color_brewer(type='seq',
+                   guide=guide_legend(title='Quality'))
+```
+
+
+ 
 
 
 ### Were there any interesting or surprising interactions between features?
@@ -350,6 +372,7 @@ can impact density which can negativitly impact alcohol
 which can impact wine quality.  I wonder if PCA would condense residual 
 sugars, density, and alcohol together.  I also believe that removing the outliers
 from residual sugar would change this chart significantly.
+
 
 ```{r echo=FALSE, Multivariate_Plots}
 set.seed(415)
@@ -424,9 +447,11 @@ rw.pca <- prcomp(log.rw[,1:12],
 
 autoplot(rw.pca, scale = 0, data = redwine)
 ```
+
 PCA doesn't provide a clear view on components, so further analysis is needed to 
 determine how features would be condensed into components.  However, it appears
 from this graph that there could be two components (0,0) and (0,1)
+
 ------
 
 # Final Plots and Summary
@@ -441,7 +466,7 @@ ggplot(redwine, aes(x = alcohol_log)) +
           title = "Alcohol Log Scaled") 
 
 ```
-``
+
 
 ### Description One
 
@@ -492,18 +517,21 @@ perhaps adding this feature would have increased the performance of the classifi
 ------
 
 # Reflection
-Overall, I analyzed the data and built a model that could correclty predict 
+I analyzed the data and built a model that could correclty predict 
 the wine quality with a high accuracy based on alcohol content, sulphates, 
 and volatile acidity.  
 
 I do believe that accuracy can be further improved 
-because these 3 features only explained 35% of the variance, so the model 
-could benefit from PCA or Kbestfeature selection.  In fact, feature selection
-and feature engineering are areas that I struggled with. 
-I wanted to discover a relationship with the acid features, but I failed to find 
-anything meaningful.
+because the 3 features of interest only explained 35% of the variance, 
+so my next step would be to run the model with the 4 PCA components 
+that we discovered in final plot 3.  Feature selection and feature engineering
+are areas that I struggled with. I took a trial and error approach by only 
+selecting the 3 highest features with a correlation to quality.
+However, an additional next step would be to use a pipeline of PCA, 
+SelectKBest, and the random forest classifier to put together a more 
+scientific approach to feature selection.
 
-However, I am happy to have successfully built a base level starting point upon
+Overall, I am happy to have successfully built a base level starting point upon
 which more indepth analysis can be performed.
 
 
