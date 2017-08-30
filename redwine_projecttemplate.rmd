@@ -81,7 +81,8 @@ redwine$X <- NULL
 ### What is the structure of your dataset?
 There are 13 variables with 1,399 observations.  All variables are numeric with 
 the exception of X and quality being integers.  There are no #N/A's in the data 
-set.  I removed X from the dataset.
+set.  I removed X from the dataset.  I will now explore each variable with a 
+density plot.
 
 ```{r}
 # create histograms for each attribute
@@ -90,24 +91,104 @@ create_plot <- function(variable) {
            geom_density())}
 
 create_plot('fixed.acidity')
-create_plot('volatile.acidity')
-create_plot('citric.acid')
-create_plot('residual.sugar')
-create_plot('chlorides')
-create_plot('free.sulfur.dioxide')
-create_plot('total.sulfur.dioxide')
-create_plot('density')
-create_plot('pH')
-create_plot('sulphates')
-create_plot('alcohol')
 
+```
+
+Fixed acidity contains most acids involved with wine or fixed or nonvolatile that 
+do not evaporate readily.  It is slightly positively skewed and has a mean of 8.3.
+
+```{r}
+create_plot('volatile.acidity')
+
+```
+
+Volatile acidity is the amount of acetic acid in wine, 
+which at too high of levels can lead to an unpleasant, vinegar taste.  It is
+slightly positively skewed and has a mean of 0.53.
+
+```{r}
+create_plot('citric.acid')
+
+```
+
+Citric acid is found in small quantities, citric acid can add 'freshness' 
+and flavor to wines.  Citric acid has a mean of 0.27 and is positively skewed.
+
+```{r}
+create_plot('residual.sugar')
+
+```
+
+Residual sugar is the amount of sugar remaining after fermentation stops, 
+it's rare to find wines with less than 1 gram/liter and wines with greater than
+45 grams/liter are considered sweet.
+Residual sugar has a mean of 2.5 and is positively skewed.
+
+```{r}
+create_plot('chlorides')
+
+```
+
+Chlorides is the amount of salt in the wine.
+Chlorides has a mean of 0.09 and is positively skewed.
+
+```{r}
+create_plot('free.sulfur.dioxide')
+
+```
+
+Free sulfur dioxide is the free form of SO2 exists in equilibrium between 
+molecular SO2 (as a dissolved gas) and bisulfite ion; it prevents microbial growth 
+and the oxidation of wine.  
+Free sulfur dioxide has a mean of 15.9 and is positively skewed.  
+
+```{r}
+create_plot('total.sulfur.dioxide')
+
+```
+
+Total sulfur dioxide is the amount of free and bound forms of S02; 
+in low concentrations, SO2 is mostly undetectable in wine, 
+but at free SO2 concentrations over 50 ppm, SO2 becomes evident in the nose 
+and taste of wine.  Total sulfur dioxide has a mean of 46.5 and is positively 
+skewed.  
+
+
+```{r}
+create_plot('density')
+
+```
+
+The density of water is close to that of water depending on the percent alcohol 
+and sugar content. Density has a mean of 1 and is normally distributed.  
+
+```{r}
+create_plot('pH')
 
 
 ```
 
+pH describes how acidic or basic a wine is on a scale from 0 (very acidic) to 14
+(very basic).  pH appears to be normally distributed with a mean of 3.311.
+
+```{r}
+create_plot('sulphates')
+
+```
+
+Sulphates is a wine additive which can contribute to sulfur dioxide gas (S02) 
+levels, wich acts as an antimicrobial and antioxidant.
+It has a mean of 0.7 and is positively skewed.  
+
+```{r}
+create_plot('alcohol')
+```
+Alcohol is the % alcohol content of the wine.  It has a mean of 0.7 and is 
+positively skewed.
+
 I created histograms for all the features and it looks like several of the variables
-are positively skewed.  I will dig deeper into this once I select the features of interest
-but it's good to know this set could benefit from log scaling.
+are positively skewed.  I will dig deeper into this once I select the features 
+of interest but it's good to know this set could benefit from log scaling.
 
 ```{r echo=FALSE}
 res <- cor(redwine)
