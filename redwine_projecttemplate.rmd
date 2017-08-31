@@ -183,6 +183,7 @@ It has a mean of 0.7 and is positively skewed.
 ```{r}
 create_plot('alcohol')
 ```
+
 Alcohol is the % alcohol content of the wine.  It has a mean of 0.7 and is 
 positively skewed.
 
